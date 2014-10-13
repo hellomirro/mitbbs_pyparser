@@ -9,7 +9,7 @@
     2. scan through each post of a page:
        - if the main post (first post) contains dirty/inproper words, delete the entire post
        - if any comment contains dirty/inproper words, delete that comment
-       - move to the next post if error occurs
+       - if error occurs, move to the next post 
     3. @TODO: log all changes with userid|post content
 
     Depends:
