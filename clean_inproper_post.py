@@ -55,8 +55,8 @@ def findWord(text, wordList):
 # OUTPUT:
 #    a list of 3 arguments used to delete a post
 def parseDelOpts(d):
-    t = re.search(r'\(.*\)', d['onclick']).group(0)
-    t = t[1:-1]
+    t    = re.search(r'\(.*\)', d['onclick']).group(0)
+    t    = t[1:-1]
     opts = t.split(',')
     opts[0] = opts[0][1:-1]
     return opts
