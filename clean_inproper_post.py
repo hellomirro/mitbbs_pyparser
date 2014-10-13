@@ -161,7 +161,7 @@ for n, item in enumerate(items):
         
         # Scan through each post
         isDirty = False
-        info    = [] # I used a list in case the one needs to put in more text
+        info    = [] # I used a list in case that one needs to put in more text
         for i, (u, p, d) in enumerate(zip(users, posts, delOpts)):
             found = findWord(p, wordList)
             if found != None:
