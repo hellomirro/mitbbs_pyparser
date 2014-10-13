@@ -86,7 +86,7 @@ def deletePost(d, opts, cookies, ask=True):
             ans = 'n'
         ans = ans[0].lower()
         if ans != 'y':
-            print("Post is NOT delete.")
+            print("Post is NOT deleted.")
             return False
     delFormOpts = opts.copy()
     delFormOpts['file']     = d[0]
