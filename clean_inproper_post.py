@@ -143,10 +143,6 @@ for n, item in enumerate(items):
         
         # Data quality check
         # @TODO: Error is not handled
-        if len(users) != len(posts) or len(users) != len(delButtons):
-            raise Exception("size mismatch: " +
-                            "(# of users == # of posts == # of delButtons) is violated.")
-        
         for u, p, d in zip(users, posts, delButtons):
             if u == None or p == None or d == None:
                 raise Exception("content error: None returned for user/post/delButton.")
