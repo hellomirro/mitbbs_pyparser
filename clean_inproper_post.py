@@ -117,7 +117,7 @@ r.encoding = "gb2312"
 
 soup = BeautifulSoup(str(r.text))
 
-# C. parse each article
+# parse each article
 itemHolder = soup.findAll('td', {'class' : 'taolun_leftright'})
 items      = itemHolder[0].findAll('a', {'class' : 'news1'})
 
