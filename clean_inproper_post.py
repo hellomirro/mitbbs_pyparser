@@ -16,7 +16,7 @@
        - BeautifulSoup4
        - requests
     
-    Author: Yue Zhao (yzhao0527@gmail.com)
+    Author: Yue Zhao (yzhao0527 [a t] gmail [d o t] com)
     Date:   2014-10-12
 """
 import re, sys
