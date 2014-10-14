@@ -80,7 +80,7 @@ def cleanPost(p):
 #      Boolean, whether the deletion operation succeeded
 def deletePost(d, opts, cookies, ask=True):
     if ask:
-        print("Delete post? [y/n]", end=" ")
+        print("    Delete post? [y/n]", end=" ")
         ans = input()
         if len(ans) == 0:
             ans = 'n'
@@ -172,7 +172,8 @@ for n, item in enumerate(items):
             print("   Dirty word Found in post: " + title)
             print("      " + info[0])
             deletePost(d, delFormOpts, cookies=session.cookies, ask=True)
-
+            print("****")
+            
     except Exception as e:
         print("Error occured {} for {}.".format(str(e), title))
 
