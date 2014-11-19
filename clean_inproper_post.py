@@ -30,20 +30,23 @@ from time import gmtime, strftime
 # import USERID and PASSWD from a file called userID.py
 # from userID import *
 USERID   = 'your username'
-PASSWD   = 'your password'
-URL      = "http://www.mitbbs.com/club_bbsdoc2/letsgo_0.html"
+PASSWD   = 'your id'
+URL      = "http://www.mitbbs.com/bbsdoc/NewYork.html"
+#URL      = "http://www.mitbbs.com/club_bbsdoc2/letsgo_0.html"
 club = False #Indicate whether a URL is of a club or not
 if "club_bbsdoc" in URL:
     club = True
 
 DICTFILE = "wordDict.txt" # each line is treated as one word and converted to lower case.
-MAXNUM = 10 # Maximum number of posts that can be deleted.
+MAX_DELETE_NUMBER = 10 # Maximum number of posts that can be deleted.
 
 # ===== End of User configuration =====
 
 # load the dirty word list
-with open(DICTFILE, "r", encoding="utf-8") as f:
-    wordList = [w.lower() for w in [w.strip() for w in f.readlines()] if len(w) > 0]
+# with open(DICTFILE, "r", encoding="utf-8") as f:
+#    wordList = [w.lower() for w in [w.strip() for w in f.readlines()] if len(w) > 0]
+
+# wordList = ["NYC", "Quant", "纽约", "问"] # Used this list to test the code MAX NUMBER IS REACHED. 
 
 # Find dirty words in the given text
 # INPUT:
@@ -147,7 +150,7 @@ def sendMessage(user,post):
 auth = {'id' : USERID, 'passwd' : PASSWD, 'kick_multi' : '1'}
 session = requests.session()
 session.post("http://www.mitbbs.com/newindex/mitbbs_bbslogin.php", data=auth)
-
+n_deleted = 0 # Counter used to count how many posts have been deleted
 
 # ========= START PARSING WEBPAGE DATA ==========
 
@@ -164,10 +167,15 @@ else:
     itemHolder = soup.findAll('td', {'class' : 'taolun_leftright'})
     items      = itemHolder[0].findAll('a', {'class' : 'news1'})
 
+
+
 for n, item in enumerate(items):
-    
+
+    if n_deleted >= MAX_DELETE_NUMBER:
+       break
+
     if n % 10 == 9:
-        print("Processed {} posts".format(n + 1))
+       print("Processed {} posts".format(n + 1))
     
     title = item.text.strip()
 
@@ -204,8 +212,6 @@ for n, item in enumerate(items):
         isDirty = False
         info    = [] # I used a list in case that one needs to put in more text
 
-        count = 0
-
         for i, (u, p, d) in enumerate(zip(users, posts, delOpts)):
             found = findWord(p, wordList)
             if found != None:
@@ -222,18 +228,18 @@ for n, item in enumerate(items):
             print("      " + info[0])
 
             deleteReturn = deletePost(d, delFormOpts, cookies=session.cookies, ask=True)
-
+            deleteReturn = True
 
             if deleteReturn:
-                saveMessage(u,p)
-                count = count + 1
-            if count >= 10:
-                break
+               n_deleted = n_deleted + 1
+               if n_deleted >= MAX_DELETE_NUMBER:
+                  print("MAX DELETE NUMBER reached")
+                  break
 
                 #Currently, the following action cannot be done with the test account
                 #sendMessage(u,p)
 
     except Exception as e:
-        print("Error occured {} for {}.".format(str(e), title))
+        print("Error occurred {} for {}.".format(str(e), title))
 
 print("done")
