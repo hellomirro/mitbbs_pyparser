@@ -22,25 +22,28 @@
 import re, sys
 from bs4 import BeautifulSoup
 import requests
-from snownlp import SnowNLP
+# from snownlp import SnowNLP
 from time import gmtime, strftime
+
 
 # ===== User configuration =====
 # import USERID and PASSWD from a file called userID.py
-from userID import *
-#USERID   = 'Your User Name Here'
-#PASSWD   = 'Your Password Here'
-#URL      = "http://www.mitbbs.com/bbsdoc/NewYork.html"
-URL      = "http://www.mitbbs.com/club_bbsdoc2/letsgo_0.html"
+# from userID import *
+USERID   = 'baishiwhite'
+PASSWD   = 'qishianqi'
+URL      = "http://www.mitbbs.com/bbsdoc/NewYork.html"
+#URL      = "http://www.mitbbs.com/club_bbsdoc2/letsgo_0.html"
 club = False #Indicate whether a URL is of a club or not
 if "club_bbsdoc" in URL:
     club = True
 
 DICTFILE = "wordDict.txt" # each line is treated as one word and converted to lower case.
+MAXNUM = 10 # Maximum number of posts that can be deleted.
+
 # ===== End of User configuration =====
 
 # load the dirty word list
-with open(DICTFILE, "r") as f:
+with open(DICTFILE, "r", encoding="utf-8") as f:
     wordList = [w.lower() for w in [w.strip() for w in f.readlines()] if len(w) > 0]
 
 # Find dirty words in the given text
@@ -65,6 +68,7 @@ def findWord(text, wordList):
 #    a list of 3 arguments used to delete a post
 def parseDelOpts(d):
     t    = re.search(r'\(.*\)', d['onclick']).group(0)
+
     t    = t[1:-1]
     opts = t.split(',')
     opts[0] = opts[0][1:-1]
@@ -167,6 +171,8 @@ for n, item in enumerate(items):
         print("Processed {} posts".format(n + 1))
     
     title = item.text.strip()
+
+
     link  = r'http://www.mitbbs.com/' + item['href']
     
     try:
@@ -180,7 +186,7 @@ for n, item in enumerate(items):
         users = [b.find('a').text.strip() for b in boxes]
         posts = [b.find('td', {"class" : "jiawenzhang-type"}) for b in boxes]
         delButtons = [b.find("a", text=u"删除") for b in boxes]
-        
+
         # Data quality check
         # @TODO: Error is not handled
         for u, p, d in zip(users, posts, delButtons):
@@ -198,6 +204,9 @@ for n, item in enumerate(items):
         # Scan through each post
         isDirty = False
         info    = [] # I used a list in case that one needs to put in more text
+
+        count = 0
+
         for i, (u, p, d) in enumerate(zip(users, posts, delOpts)):
             found = findWord(p, wordList)
             if found != None:
@@ -214,8 +223,14 @@ for n, item in enumerate(items):
             print("      " + info[0])
 
             deleteReturn = deletePost(d, delFormOpts, cookies=session.cookies, ask=True)
+
+
             if deleteReturn:
                 saveMessage(u,p)
+                count = count + 1
+            if count >= 10:
+                break
+
                 #Currently, the following action cannot be done with the test account
                 #sendMessage(u,p)
 
