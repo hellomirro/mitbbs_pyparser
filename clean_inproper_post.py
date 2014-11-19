@@ -11,6 +11,7 @@
        - if any comment contains dirty/inproper words, delete that comment
        - if error occurs, move to the next post 
     3. @TODO: log all changes with userid|post content
+    4. Set an option that the max delete number of posts cannot exceed 10. 
 
     Depends:
        - BeautifulSoup4
