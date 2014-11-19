@@ -29,10 +29,9 @@ from time import gmtime, strftime
 # ===== User configuration =====
 # import USERID and PASSWD from a file called userID.py
 # from userID import *
-USERID   = 'baishiwhite'
-PASSWD   = 'qishianqi'
-URL      = "http://www.mitbbs.com/bbsdoc/NewYork.html"
-#URL      = "http://www.mitbbs.com/club_bbsdoc2/letsgo_0.html"
+USERID   = 'your username'
+PASSWD   = 'your password'
+URL      = "http://www.mitbbs.com/club_bbsdoc2/letsgo_0.html"
 club = False #Indicate whether a URL is of a club or not
 if "club_bbsdoc" in URL:
     club = True
