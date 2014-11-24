@@ -11,7 +11,6 @@
        - if any comment contains dirty/inproper words, delete that comment
        - if error occurs, move to the next post 
     3. @TODO: log all changes with userid|post content
-    4. Set an option that the max delete number of posts cannot exceed 10. 
 
     Depends:
        - BeautifulSoup4
@@ -31,9 +30,9 @@ from time import gmtime, strftime
 # import USERID and PASSWD from a file called userID.py
 # from userID import *
 USERID   = 'your username'
-PASSWD   = 'your id'
-URL      = "http://www.mitbbs.com/bbsdoc/NewYork.html"
-#URL      = "http://www.mitbbs.com/club_bbsdoc2/letsgo_0.html"
+PASSWD   = 'your pwd'
+#URL      = "http://www.mitbbs.com/bbsdoc/NewYork.html"
+URL      = "http://www.mitbbs.com/club_bbsdoc2/letsgo_0.html"
 club = False #Indicate whether a URL is of a club or not
 if "club_bbsdoc" in URL:
     club = True
@@ -41,13 +40,15 @@ if "club_bbsdoc" in URL:
 DICTFILE = "wordDict.txt" # each line is treated as one word and converted to lower case.
 MAX_DELETE_NUMBER = 10 # Maximum number of posts that can be deleted.
 
+#wordList = ['goood']
+
 # ===== End of User configuration =====
 
 # load the dirty word list
-# with open(DICTFILE, "r", encoding="utf-8") as f:
-#    wordList = [w.lower() for w in [w.strip() for w in f.readlines()] if len(w) > 0]
+with open(DICTFILE, "r", encoding="utf-8") as f:
+    wordList = [w.lower() for w in [w.strip() for w in f.readlines()] if len(w) > 0]
 
-# wordList = ["NYC", "Quant", "纽约", "问"] # Used this list to test the code MAX NUMBER IS REACHED. 
+# wordList = ["NYC", "Quant", "纽约", "问"] # Used this list to test the code MAX NUMBER IS REACHED.
 
 # Find dirty words in the given text
 # INPUT:
@@ -147,6 +148,35 @@ def sendMessage(user,post):
     else: 
         return False   
 
+
+#Get the edit information
+def getEditInfo(elink):
+    edit_re = requests.get("http://www.mitbbs.com" + elink["href"], cookies = session.cookies) # click Modify button
+    edit_re.encoding = 'gb2312'
+    edit_form_start = edit_re.text.find('<form name="form1"')
+    edit_form_end = edit_re.text.find('</form>', edit_form_start)
+    edit_form_str = edit_re.text[edit_form_start: edit_form_end + 7]  #7 is the length of '</form>'
+    esoup = BeautifulSoup(edit_form_str)
+    inputs = esoup.find_all("input")
+    ops = {t['name'] : t['value'] if t.has_attr('value') else "" for t in inputs if t.has_attr('name')}
+    return ops
+
+#Post content using editops
+def postEdited(content, editops):
+    editops["text"] = content # the content of the modified post
+    #pdb.set_trace()
+    postResponse = requests.post(r"http://www.mitbbs.com/mitbbs_bbsedit_charge.php", data=editops, cookies=session.cookies, allow_redirects=True)
+
+    postResponse.encoding = "gb2312"
+    if postResponse.text.find(r"修改文章成功") != -1: #@TODO: there must be a better way to do this
+        print(r"Edit post succeed.")
+        return True
+    else:
+        print(r"Edit post failed.")
+        return False
+
+
+
 # login to http://www.mitbbs.com
 auth = {'id' : USERID, 'passwd' : PASSWD, 'kick_multi' : '1'}
 session = requests.session()
@@ -194,6 +224,7 @@ for n, item in enumerate(items):
         users = [b.find('a').text.strip() for b in boxes]
         posts = [b.find('td', {"class" : "jiawenzhang-type"}) for b in boxes]
         delButtons = [b.find("a", text=u"删除") for b in boxes]
+        editLink = [b.find("a", text=u"修改") for b in boxes] # list of Modify links of the post on the page
 
         # Data quality check
         # @TODO: Error is not handled
@@ -210,32 +241,45 @@ for n, item in enumerate(items):
         delFormOpts  = {t['name'] : t['value'] if t.has_attr('value') else '' for t in delFormItems}
         
         # Scan through each post
-        isDirty = False
-        info    = [] # I used a list in case that one needs to put in more text
 
-        for i, (u, p, d) in enumerate(zip(users, posts, delOpts)):
+        for i, (u, p, d, el) in enumerate(zip(users, posts, delOpts, editLink)):
+            
+            deleteThisPost = False
+            info    = [] # I used a list in case that one needs to put in more text
+
             found = findWord(p, wordList)
             if found != None:
-                isDirty = True
                 if i == 0: # The first article is treated as the main article
+                    deleteThisPost = True
                     info.append("The main article contains: " + found)
-                    break
                 else:      # All other articles are treated as comments
                     info.append("         A reply contains: " + found)
-                    break
+                    pureReply = p.split("的大作中提到")[0]  + "的大作中提到：】"
+                    pureReply = pureReply[pureReply.find('\n') + 1:] # start from the second line, b/c the first line is 发信站...
+                    #print("pureReply is " + pureReply)
+                    replyFound = findWord(pureReply, wordList)
+                    if replyFound is not None: # Pure Reply contains dirty
+                        print("Pure Reply contains dirty")
+                        deleteThisPost = True
+                    else: # Pure Reply does not contain dirty but original reply contains dirty, need modification
+                        print("Editing post")
+                        editops = getEditInfo(el) # el is the edit link for original post
+                        new_content = pureReply
+                        print("new_content is '" + new_content + "'")
+                        editReturn = postEdited(new_content,editops)
 
-        if isDirty: # @TODO: add more criteria
-            print("   Dirty word Found in post: " + title)
-            print("      " + info[0])
+            if deleteThisPost: # @TODO: add more criteria
+               print("   Dirty word Found in post: " + title)
+               print("      " + info[0])
 
-            deleteReturn = deletePost(d, delFormOpts, cookies=session.cookies, ask=True)
-            deleteReturn = True
+               deleteReturn = deletePost(d, delFormOpts, cookies=session.cookies, ask=True)
+            # deleteReturn = True # This line is used for test. Meanwhile commented deleteReturn.
 
-            if deleteReturn:
-               n_deleted = n_deleted + 1
-               if n_deleted >= MAX_DELETE_NUMBER:
-                  print("MAX DELETE NUMBER reached")
-                  break
+               if deleteReturn:
+                   n_deleted = n_deleted + 1
+                   if n_deleted >= MAX_DELETE_NUMBER:
+                      print("MAX_DELETE_NUMBER reached")
+                      break
 
                 #Currently, the following action cannot be done with the test account
                 #sendMessage(u,p)
